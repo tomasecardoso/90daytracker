@@ -8,168 +8,190 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --orange: #ff5a00;
-    --orange-dim: rgba(255,90,0,0.10);
-    --orange-glow: rgba(255,90,0,0.25);
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --surface2: #181818;
-    --border: rgba(255,255,255,0.06);
-    --border-active: rgba(255,90,0,0.4);
-    --text: #f0f0f0;
-    --text-dim: #555;
-    --text-mid: #888;
-    --green: #2ecc71;
-    --red: #e74c3c;
+    --orange:#ff5a00; --orange-dim:rgba(255,90,0,0.10); --orange-glow:rgba(255,90,0,0.25);
+    --bg:#0a0a0a; --surface:#111; --surface2:#181818; --surface3:#222;
+    --border:rgba(255,255,255,0.06); --border-active:rgba(255,90,0,0.4);
+    --text:#f0f0f0; --text-dim:#555; --text-mid:#888; --green:#2ecc71; --red:#e74c3c;
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; overflow-x:hidden; }
-  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; z-index:1000; opacity:0.4; }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:0.4;}
+  .app{max-width:680px;margin:0 auto;padding:0 20px 80px;}
 
-  .app { max-width:680px; margin:0 auto; padding:0 20px 80px; }
+  /* sync */
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text-dim);display:inline-block;margin-left:8px;transition:background 0.3s;vertical-align:middle;}
+  .sync-dot.syncing{background:var(--orange);animation:pulse 1s infinite;}
+  .sync-dot.synced{background:var(--green);}
+  .sync-dot.error{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--text-dim); display:inline-block; margin-left:8px; transition:background 0.3s; vertical-align:middle; }
-  .sync-dot.syncing { background:var(--orange); animation:pulse 1s infinite; }
-  .sync-dot.synced  { background:var(--green); }
-  .sync-dot.error   { background:var(--red); }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+  /* header */
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px;animation:fadeUp .5s ease both;}
+  .header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;color:var(--orange);display:flex;align-items:center;}
+  .day-badge{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--text-dim);background:var(--surface);border:1px solid var(--border);padding:6px 14px;border-radius:2px;}
+  .day-badge span{color:var(--orange);}
+  h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,10vw,80px);line-height:0.9;letter-spacing:2px;margin-top:12px;color:var(--text);}
+  h1 em{color:var(--orange);font-style:normal;display:block;}
+  .phase-indicator{display:flex;gap:8px;margin-top:20px;align-items:center;}
+  .phase-dot{height:3px;flex:1;background:var(--surface2);border-radius:2px;transition:background .3s;}
+  .phase-dot.active{background:var(--orange);}
+  .phase-dot.done{background:rgba(255,90,0,0.4);}
+  .phase-label{font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;white-space:nowrap;}
 
-  .header { padding:48px 0 32px; border-bottom:1px solid var(--border); margin-bottom:40px; animation:fadeUp 0.5s ease both; }
-  .header-top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
-  .logo { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:3px; color:var(--orange); display:flex; align-items:center; }
-  .day-badge { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; color:var(--text-dim); background:var(--surface); border:1px solid var(--border); padding:6px 14px; border-radius:2px; }
-  .day-badge span { color:var(--orange); }
-  h1 { font-family:'Bebas Neue',sans-serif; font-size:clamp(52px,10vw,80px); line-height:0.9; letter-spacing:2px; margin-top:12px; color:var(--text); }
-  h1 em { color:var(--orange); font-style:normal; display:block; }
-  .phase-indicator { display:flex; gap:8px; margin-top:20px; align-items:center; }
-  .phase-dot { height:3px; flex:1; background:var(--surface2); border-radius:2px; transition:background 0.3s; }
-  .phase-dot.active { background:var(--orange); }
-  .phase-dot.done   { background:rgba(255,90,0,0.4); }
-  .phase-label { font-size:11px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; white-space:nowrap; }
+  .section-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
 
-  .section-label { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--text-dim); margin-bottom:16px; display:flex; align-items:center; gap:12px; }
-  .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+  /* today anchors */
+  .checkin-block{margin-bottom:40px;animation:fadeUp .5s .1s ease both;}
+  .date-display{font-size:13px;color:var(--text-mid);margin-bottom:20px;font-weight:300;}
+  .anchors{display:flex;flex-direction:column;gap:10px;}
+  .anchor-item{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px 20px;cursor:pointer;transition:all .2s;user-select:none;}
+  .anchor-item:hover{border-color:var(--border-active);background:var(--surface2);}
+  .anchor-item.checked{border-color:var(--orange);background:var(--orange-dim);}
+  .anchor-checkbox{width:22px;height:22px;border:1.5px solid var(--text-dim);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+  .anchor-item.checked .anchor-checkbox{border-color:var(--orange);background:var(--orange);}
+  .anchor-checkbox svg{opacity:0;transition:opacity .15s;}
+  .anchor-item.checked .anchor-checkbox svg{opacity:1;}
+  .anchor-text{flex:1;}
+  .anchor-name{font-size:14px;font-weight:500;margin-bottom:2px;}
+  .anchor-desc{font-size:12px;color:var(--text-dim);font-weight:300;}
+  .anchor-time{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:var(--text-dim);white-space:nowrap;}
+  .anchor-item.checked .anchor-time{color:var(--orange);}
 
-  .checkin-block { margin-bottom:40px; animation:fadeUp 0.5s 0.1s ease both; }
-  .date-display { font-size:13px; color:var(--text-mid); margin-bottom:20px; font-weight:300; }
-  .anchors { display:flex; flex-direction:column; gap:10px; }
-  .anchor-item { display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:16px 20px; cursor:pointer; transition:all 0.2s; user-select:none; }
-  .anchor-item:hover { border-color:var(--border-active); background:var(--surface2); }
-  .anchor-item.checked { border-color:var(--orange); background:var(--orange-dim); }
-  .anchor-checkbox { width:22px; height:22px; border:1.5px solid var(--text-dim); border-radius:2px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; }
-  .anchor-item.checked .anchor-checkbox { border-color:var(--orange); background:var(--orange); }
-  .anchor-checkbox svg { opacity:0; transition:opacity 0.15s; }
-  .anchor-item.checked .anchor-checkbox svg { opacity:1; }
-  .anchor-text { flex:1; }
-  .anchor-name { font-size:14px; font-weight:500; margin-bottom:2px; }
-  .anchor-desc { font-size:12px; color:var(--text-dim); font-weight:300; }
-  .anchor-time { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:var(--text-dim); white-space:nowrap; }
-  .anchor-item.checked .anchor-time { color:var(--orange); }
+  /* today tasks */
+  .tasks-block{margin-bottom:40px;animation:fadeUp .5s .15s ease both;}
+  .task-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;min-height:4px;}
+  .task-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px 16px;}
+  .task-item.done .task-label{color:var(--text-dim);text-decoration:line-through;}
+  .task-check{width:18px;height:18px;border:1.5px solid var(--text-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .2s;}
+  .task-item.done .task-check{border-color:var(--green);background:var(--green);}
+  .task-check svg{opacity:0;transition:opacity .15s;}
+  .task-item.done .task-check svg{opacity:1;}
+  .task-label{flex:1;font-size:13px;}
 
-  .tasks-block { margin-bottom:40px; animation:fadeUp 0.5s 0.15s ease both; }
-  .task-list { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; min-height:4px; }
-  .task-item { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:12px 16px; }
-  .task-item.done .task-label { color:var(--text-dim); text-decoration:line-through; }
-  .task-check { width:18px; height:18px; border:1.5px solid var(--text-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; transition:all 0.2s; }
-  .task-item.done .task-check { border-color:var(--green); background:var(--green); }
-  .task-check svg { opacity:0; transition:opacity 0.15s; }
-  .task-item.done .task-check svg { opacity:1; }
-  .task-label { flex:1; font-size:13px; }
-  .task-delete { width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-dim); opacity:0; transition:opacity 0.2s; font-size:18px; }
-  .task-item:hover .task-delete { opacity:1; }
-  .task-delete:hover { color:var(--red); }
-  .task-input-row { display:flex; gap:8px; }
-  .task-input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:11px 16px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; transition:border-color 0.2s; }
-  .task-input::placeholder { color:var(--text-dim); }
-  .task-input:focus { border-color:var(--border-active); }
-  .task-add-btn { background:var(--surface); border:1px solid var(--border); color:var(--text-mid); padding:11px 18px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; border-radius:4px; transition:all 0.2s; white-space:nowrap; }
-  .task-add-btn:hover { border-color:var(--orange); color:var(--orange); }
 
-  .note-block { margin-bottom:40px; animation:fadeUp 0.5s 0.2s ease both; }
-  .note-area { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:16px 20px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:300; line-height:1.7; resize:none; min-height:110px; transition:border-color 0.2s; outline:none; }
-  .note-area::placeholder { color:var(--text-dim); }
-  .note-area:focus { border-color:var(--border-active); }
-  .save-btn { margin-top:12px; background:var(--orange); color:#fff; border:none; padding:13px 28px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; cursor:pointer; border-radius:2px; transition:all 0.2s; width:100%; }
-  .save-btn:hover { background:#ff7a2a; transform:translateY(-1px); }
-  .save-btn.saved { background:var(--green); }
+  .task-delete{width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:18px;border-radius:3px;transition:all .15s;flex-shrink:0;}
+  .task-delete:hover{color:var(--red);background:rgba(231,76,60,0.1);}
+  .task-divider{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);padding:8px 2px 4px;}
+  .task-input-row{display:flex;gap:8px;}
+  .task-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:11px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+  .task-input::placeholder{color:var(--text-dim);}
+  .task-input:focus{border-color:var(--border-active);}
+  .task-add-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-mid);padding:11px 18px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;border-radius:4px;transition:all .2s;white-space:nowrap;}
+  .task-add-btn:hover{border-color:var(--orange);color:var(--orange);}
 
-  .phase-metric { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:20px; margin-bottom:40px; animation:fadeUp 0.5s 0.25s ease both; }
-  .metric-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .metric-title { font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--text-mid); }
-  .metric-phase-tag { font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:2px; color:var(--orange); background:var(--orange-dim); padding:3px 10px; border-radius:2px; }
-  .metric-value { font-family:'Bebas Neue',sans-serif; font-size:48px; line-height:1; margin-bottom:4px; }
-  .metric-value span { font-size:20px; color:var(--text-dim); }
-  .metric-desc-txt { font-size:13px; color:var(--text-dim); font-weight:300; margin-top:4px; }
-  .metric-input-row { display:flex; gap:10px; margin-top:14px; }
-  .metric-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:3px; padding:10px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; transition:border-color 0.2s; }
-  .metric-input:focus { border-color:var(--border-active); }
-  .metric-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text-mid); padding:10px 18px; font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; border-radius:3px; transition:all 0.2s; }
-  .metric-btn:hover { border-color:var(--orange); color:var(--orange); }
+  /* note */
+  .note-block{margin-bottom:40px;animation:fadeUp .5s .2s ease both;}
+  .note-area{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px 20px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;line-height:1.7;resize:none;min-height:110px;transition:border-color .2s;outline:none;}
+  .note-area::placeholder{color:var(--text-dim);}
+  .note-area:focus{border-color:var(--border-active);}
+  .save-btn{margin-top:12px;background:var(--orange);color:#fff;border:none;padding:13px 28px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;border-radius:2px;transition:all .2s;width:100%;}
+  .save-btn:hover{background:#ff7a2a;transform:translateY(-1px);}
+  .save-btn.saved{background:var(--green);}
 
-  .streak-block { margin-bottom:40px; animation:fadeUp 0.5s 0.3s ease both; }
-  .streak-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
-  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:16px; text-align:center; }
-  .stat-num { font-family:'Bebas Neue',sans-serif; font-size:36px; line-height:1; color:var(--orange); }
-  .stat-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-top:4px; }
-  .calendar-grid { display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
-  .cal-day { aspect-ratio:1; border-radius:2px; background:var(--surface); border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-  .cal-day:hover:not(.future) { border-color:var(--orange); transform:scale(1.15); z-index:2; }
-  .cal-day.today   { border-color:var(--orange); box-shadow:0 0 8px var(--orange-glow); }
-  .cal-day.full    { background:var(--orange); border-color:var(--orange); }
-  .cal-day.partial { background:var(--orange-dim); border-color:rgba(255,90,0,0.3); }
-  .cal-day.future  { opacity:0.2; cursor:default; pointer-events:none; }
-  .progress-bar-wrap { background:var(--surface2); border-radius:2px; height:3px; margin-top:16px; overflow:hidden; }
-  .progress-bar-fill { height:100%; background:var(--orange); border-radius:2px; transition:width 0.4s ease; }
-  .progress-label { display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:var(--text-dim); letter-spacing:1px; }
+  /* metric */
+  .phase-metric{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:40px;animation:fadeUp .5s .25s ease both;}
+  .metric-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .metric-title{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--text-mid);}
+  .metric-phase-tag{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2px;color:var(--orange);background:var(--orange-dim);padding:3px 10px;border-radius:2px;}
+  .metric-value{font-family:'Bebas Neue',sans-serif;font-size:48px;line-height:1;margin-bottom:4px;}
+  .metric-value span{font-size:20px;color:var(--text-dim);}
+  .metric-desc-txt{font-size:13px;color:var(--text-dim);font-weight:300;margin-top:4px;}
+  .metric-input-row{display:flex;gap:10px;margin-top:14px;}
+  .metric-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+  .metric-input:focus{border-color:var(--border-active);}
+  .metric-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;border-radius:3px;transition:all .2s;}
+  .metric-btn:hover{border-color:var(--orange);color:var(--orange);}
 
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity 0.25s; backdrop-filter:blur(6px); }
-  .modal-overlay.open { opacity:1; pointer-events:all; }
-  .modal { background:var(--surface); border:1px solid rgba(255,255,255,0.08); border-radius:6px; width:100%; max-width:520px; max-height:85vh; overflow-y:auto; transform:translateY(24px); transition:transform 0.25s; }
-  .modal-overlay.open .modal { transform:translateY(0); }
-  .modal-header { padding:24px 24px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; position:sticky; top:0; background:var(--surface); z-index:10; }
-  .modal-day-num { font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:3px; color:var(--orange); margin-bottom:4px; }
-  .modal-date-title { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:2px; line-height:1; }
-  .modal-close { width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-dim); font-size:20px; transition:color 0.2s; flex-shrink:0; margin-top:2px; }
-  .modal-close:hover { color:var(--text); }
-  .modal-body { padding:24px; display:flex; flex-direction:column; gap:24px; }
-  .modal-sec-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--text-dim); margin-bottom:12px; }
-  .modal-anchors { display:flex; flex-direction:column; gap:8px; }
-  .modal-anchor { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:3px; background:var(--surface2); }
-  .modal-anchor-dot { width:10px; height:10px; border-radius:50%; background:var(--text-dim); flex-shrink:0; }
-  .modal-anchor.done .modal-anchor-dot { background:var(--orange); }
-  .modal-anchor-label { font-size:13px; color:var(--text-mid); }
-  .modal-anchor.done .modal-anchor-label { color:var(--text); }
-  .modal-tasks-list { display:flex; flex-direction:column; gap:6px; }
-  .modal-task { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--surface2); border-radius:3px; }
-  .modal-task-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-  .modal-task.done .modal-task-dot { background:var(--green); }
-  .modal-task:not(.done) .modal-task-dot { background:var(--text-dim); }
-  .modal-task-text { font-size:13px; }
-  .modal-task.done .modal-task-text { color:var(--text-dim); text-decoration:line-through; }
-  .modal-task:not(.done) .modal-task-text { color:var(--text-mid); }
-  .modal-note { background:var(--surface2); border-radius:3px; padding:14px 16px; font-size:13px; font-weight:300; line-height:1.7; color:var(--text-mid); font-style:italic; white-space:pre-wrap; }
-  .modal-metric-row { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:var(--surface2); border-radius:3px; }
-  .modal-metric-label { font-size:12px; color:var(--text-mid); }
-  .modal-metric-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--orange); letter-spacing:1px; }
-  .modal-empty { font-size:13px; color:var(--text-dim); font-style:italic; padding:6px 0; }
+  /* streak/calendar */
+  .streak-block{margin-bottom:40px;animation:fadeUp .5s .3s ease both;}
+  .streak-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+  .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px;text-align:center;}
+  .stat-num{font-family:'Bebas Neue',sans-serif;font-size:36px;line-height:1;color:var(--orange);}
+  .stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
+  .calendar-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;}
+  .cal-day{aspect-ratio:1;border-radius:2px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+  .cal-day:hover:not(.future){border-color:var(--orange);transform:scale(1.15);z-index:2;}
+  .cal-day.today{border-color:var(--orange);box-shadow:0 0 8px var(--orange-glow);}
+  .cal-day.full{background:var(--orange);border-color:var(--orange);}
+  .cal-day.partial{background:var(--orange-dim);border-color:rgba(255,90,0,0.3);}
+  .cal-day.future{opacity:0.2;cursor:default;pointer-events:none;}
+  .progress-bar-wrap{background:var(--surface2);border-radius:2px;height:3px;margin-top:16px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:var(--orange);border-radius:2px;transition:width .4s ease;}
+  .progress-label{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text-dim);letter-spacing:1px;}
 
-  .history-block { margin-bottom:40px; animation:fadeUp 0.5s 0.35s ease both; }
-  .history-entry { border-left:2px solid var(--border); padding:14px 0 14px 20px; margin-bottom:4px; cursor:pointer; transition:border-color 0.2s; }
-  .history-entry:hover { border-color:var(--orange); }
-  .history-date { font-size:11px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px; }
-  .history-anchors { display:flex; gap:6px; margin-bottom:8px; }
-  .history-dot { width:8px; height:8px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); }
-  .history-dot.done { background:var(--orange); border-color:var(--orange); }
-  .history-tasks-summary { font-size:12px; color:var(--text-dim); margin-bottom:6px; }
-  .history-note { font-size:13px; color:var(--text-mid); font-weight:300; line-height:1.5; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* history */
+  .history-block{margin-bottom:40px;animation:fadeUp .5s .35s ease both;}
+  .history-entry{border-left:2px solid var(--border);padding:14px 0 14px 20px;margin-bottom:4px;cursor:pointer;transition:border-color .2s;}
+  .history-entry:hover{border-color:var(--orange);}
+  .history-date{font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px;}
+  .history-anchors{display:flex;gap:6px;margin-bottom:8px;}
+  .history-dot{width:8px;height:8px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);}
+  .history-dot.done{background:var(--orange);border-color:var(--orange);}
+  .history-tasks-summary{font-size:12px;color:var(--text-dim);margin-bottom:6px;}
+  .history-note{font-size:13px;color:var(--text-mid);font-weight:300;line-height:1.5;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-  .reset-link { font-size:11px; color:var(--text-dim); text-align:center; cursor:pointer; letter-spacing:1px; text-transform:uppercase; margin-top:40px; padding:12px; transition:color 0.2s; }
-  .reset-link:hover { color:#e55; }
+  /* modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(6px);}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--surface);border:1px solid rgba(255,255,255,0.08);border-radius:6px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;transform:translateY(24px);transition:transform .25s;}
+  .modal-overlay.open .modal{transform:translateY(0);}
+  .modal-header{padding:24px 24px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;position:sticky;top:0;background:var(--surface);z-index:10;}
+  .modal-day-num{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:3px;color:var(--orange);margin-bottom:4px;}
+  .modal-date-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;line-height:1;}
+  .modal-close{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:20px;transition:color .2s;flex-shrink:0;margin-top:2px;}
+  .modal-close:hover{color:var(--text);}
+  .modal-body{padding:24px;display:flex;flex-direction:column;gap:24px;}
+  .modal-sec-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
 
-  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface2); border:1px solid var(--border-active); color:var(--orange); font-size:12px; letter-spacing:2px; text-transform:uppercase; padding:10px 24px; border-radius:2px; opacity:0; transition:all 0.3s; pointer-events:none; z-index:9999; }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  /* modal anchors — clickable */
+  .modal-anchors{display:flex;flex-direction:column;gap:8px;}
+  .modal-anchor{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:3px;background:var(--surface2);cursor:pointer;transition:all .2s;user-select:none;}
+  .modal-anchor:hover{background:var(--surface3);}
+  .modal-anchor.done{background:var(--orange-dim);}
+  .modal-anchor-dot{width:10px;height:10px;border-radius:50%;background:var(--text-dim);flex-shrink:0;transition:background .2s;}
+  .modal-anchor.done .modal-anchor-dot{background:var(--orange);}
+  .modal-anchor-label{font-size:13px;color:var(--text-mid);transition:color .2s;}
+  .modal-anchor.done .modal-anchor-label{color:var(--text);}
 
-  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
+  /* modal tasks — editable */
+  .modal-tasks-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+  .modal-task{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:3px;}
+  .modal-task-check{width:16px;height:16px;border:1.5px solid var(--text-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .2s;}
+  .modal-task.done .modal-task-check{border-color:var(--green);background:var(--green);}
+  .modal-task-check svg{opacity:0;transition:opacity .15s;}
+  .modal-task.done .modal-task-check svg{opacity:1;}
+  .modal-task-text{font-size:13px;flex:1;}
+  .modal-task.done .modal-task-text{color:var(--text-dim);text-decoration:line-through;}
+  .modal-task:not(.done) .modal-task-text{color:var(--text-mid);}
+  .modal-task-del{width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:16px;border-radius:3px;transition:all .15s;flex-shrink:0;}
+  .modal-task-del:hover{color:var(--red);background:rgba(231,76,60,0.1);}
+  .modal-task-input-row{display:flex;gap:8px;}
+  .modal-task-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+  .modal-task-input::placeholder{color:var(--text-dim);}
+  .modal-task-input:focus{border-color:var(--border-active);}
+  .modal-task-add{background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;border-radius:3px;transition:all .2s;white-space:nowrap;}
+  .modal-task-add:hover{border-color:var(--orange);color:var(--orange);}
+
+  /* modal note — editable */
+  .modal-note-area{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:12px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;line-height:1.7;resize:none;min-height:90px;outline:none;transition:border-color .2s;font-style:italic;}
+  .modal-note-area::placeholder{color:var(--text-dim);}
+  .modal-note-area:focus{border-color:var(--border-active);}
+  .modal-save-btn{margin-top:10px;background:var(--orange);color:#fff;border:none;padding:10px 20px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:2px;transition:all .2s;width:100%;}
+  .modal-save-btn:hover{background:#ff7a2a;}
+  .modal-save-btn.saved{background:var(--green);}
+
+  .modal-metric-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--surface2);border-radius:3px;}
+  .modal-metric-label{font-size:12px;color:var(--text-mid);}
+  .modal-metric-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--orange);letter-spacing:1px;}
+  .modal-empty{font-size:13px;color:var(--text-dim);font-style:italic;padding:6px 0;}
+
+  .reset-link{font-size:11px;color:var(--text-dim);text-align:center;cursor:pointer;letter-spacing:1px;text-transform:uppercase;margin-top:40px;padding:12px;transition:color .2s;}
+  .reset-link:hover{color:#e55;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border-active);color:var(--orange);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px 24px;border-radius:2px;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
   ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
 </style>
 </head>
@@ -206,7 +228,7 @@
       </div>
       <div class="anchor-item" id="anchor2" onclick="toggleAnchor(2)">
         <div class="anchor-checkbox"><svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="anchor-text"><div class="anchor-name">Fecho do Dia</div><div class="anchor-desc">O que fiz, o que fica amanhã, como me sentes</div></div>
+        <div class="anchor-text"><div class="anchor-name">Fecho do Dia</div><div class="anchor-desc">O que fiz, o que fica amanhã, como te sentes</div></div>
         <div class="anchor-time">FINAL DO DIA</div>
       </div>
     </div>
@@ -260,6 +282,7 @@
   <div class="reset-link" onclick="confirmReset()">↺ Reiniciar protocolo</div>
 </div>
 
+<!-- Modal -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
   <div class="modal">
     <div class="modal-header">
@@ -273,28 +296,31 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ── Config ────────────────────────────────────────────────
   const SUPABASE_URL  = 'https://phhuhdxtabhlxswtvayh.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoaHVoZHh0YWJobHhzd3R2YXloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTE3ODYsImV4cCI6MjA5MTIyNzc4Nn0.U9BHPh_RY-1o19ptjV4xlnkarFFTkwiN6rYgteCHYoo';
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  const START_LS    = 'p90_start_v2';
-  const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const MONTH_LONG  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const MONTH_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const PHASE_META  = {
-    1:{ title:'Treinos completados',  tag:'FASE 1', unit:'/ 30',       desc:'Objectivo: 30 treinos em 30 dias' },
-    2:{ title:'Conversas comerciais', tag:'FASE 2', unit:'esta semana', desc:'Objectivo: 3 por semana — novas ou em curso' },
-    3:{ title:'Entregas sem revisão', tag:'FASE 3', unit:'total',       desc:'Objectivo: 1 entrega + 1 onboarding sem ti' },
+  const START_LS   = 'p90_start_v2';
+  const DAY_NAMES  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const MONTH_LONG = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const MONTH_SHORT= ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const PHASE_META = {
+    1:{title:'Treinos completados', tag:'FASE 1', unit:'/ 30',       desc:'Objectivo: 30 treinos em 30 dias'},
+    2:{title:'Conversas comerciais',tag:'FASE 2', unit:'esta semana',desc:'Objectivo: 3 por semana — novas ou em curso'},
+    3:{title:'Entregas sem revisão',tag:'FASE 3', unit:'total',      desc:'Objectivo: 1 entrega + 1 onboarding sem ti'},
   };
+  const ANCHOR_LABELS = ['Treino','Bloco Sagrado','Fecho do Dia'];
 
-  // ── State ────────────────────────────────────────────────
-  let cache        = {}; // { [day_key]: {anchors, tasks, note} }
-  let metricValue  = 0;
-  let todayAnchors = [false,false,false];
-  let todayTasks   = [];
+  let cache       = {};
+  let metricValue = 0;
+  let todayAnchors= [false,false,false];
+  let todayTasks  = [];
 
-  // ── Utils ────────────────────────────────────────────────
+  // current modal state (for past-day editing)
+  let modalKey    = null;
+  let modalAnchors= [false,false,false];
+  let modalTasks  = [];
+
   const todayKey      = () => new Date().toISOString().slice(0,10);
   const daysBetween   = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
   const getStartDate  = () => { let d=localStorage.getItem(START_LS); if(!d){d=todayKey();localStorage.setItem(START_LS,d);} return d; };
@@ -305,67 +331,60 @@
   const esc           = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const setSyncDot    = s => { document.getElementById('syncDot').className='sync-dot '+s; };
 
-  // ── DB ───────────────────────────────────────────────────
+  // ── DB ────────────────────────────────────────────────────
   async function loadAllFromDB() {
     setSyncDot('syncing');
     try {
-      const [{ data: days, error: e1 }, { data: metaRows, error: e2 }] = await Promise.all([
+      const [{data:days,error:e1},{data:metaRows,error:e2}] = await Promise.all([
         sb.from('protocol_days').select('*'),
         sb.from('protocol_meta').select('*'),
       ]);
-      if (e1) throw e1;
-      cache = {};
-      (days||[]).forEach(r => { cache[r.day_key]={ anchors:r.anchors||[false,false,false], tasks:r.tasks||[], note:r.note||'' }; });
-      const metaMap = {};
-      (metaRows||[]).forEach(r => metaMap[r.key]=r.value);
-      if (metaMap.metric)     metricValue = metaMap.metric.value ?? 0;
-      if (metaMap.start_date) localStorage.setItem(START_LS, metaMap.start_date.date);
-      else {
-        await sb.from('protocol_meta').upsert({ key:'start_date', value:{ date:getStartDate() }, updated_at:new Date().toISOString() },{ onConflict:'key' });
-      }
+      if(e1) throw e1;
+      cache={};
+      (days||[]).forEach(r=>{ cache[r.day_key]={anchors:r.anchors||[false,false,false],tasks:r.tasks||[],note:r.note||''}; });
+      const mm={};
+      (metaRows||[]).forEach(r=>mm[r.key]=r.value);
+      if(mm.metric)     metricValue=mm.metric.value??0;
+      if(mm.start_date) localStorage.setItem(START_LS,mm.start_date.date);
+      else await sb.from('protocol_meta').upsert({key:'start_date',value:{date:getStartDate()},updated_at:new Date().toISOString()},{onConflict:'key'});
       setSyncDot('synced');
-    } catch(err) {
-      console.error(err);
-      setSyncDot('error');
-      showToast('Erro de ligação — modo offline');
-    }
+    } catch(err){ console.error(err); setSyncDot('error'); showToast('Erro de ligação'); }
   }
 
   async function upsertDay(key) {
-    const e = cache[key]||{ anchors:[false,false,false], tasks:[], note:'' };
+    const e=cache[key]||{anchors:[false,false,false],tasks:[],note:''};
     setSyncDot('syncing');
-    const { error } = await sb.from('protocol_days').upsert({ day_key:key, anchors:e.anchors, tasks:e.tasks, note:e.note, updated_at:new Date().toISOString() },{ onConflict:'day_key' });
-    setSyncDot(error ? 'error' : 'synced');
+    const {error}=await sb.from('protocol_days').upsert({day_key:key,anchors:e.anchors,tasks:e.tasks,note:e.note,updated_at:new Date().toISOString()},{onConflict:'day_key'});
+    setSyncDot(error?'error':'synced');
   }
 
   async function saveMetricToDB() {
     setSyncDot('syncing');
-    const { error } = await sb.from('protocol_meta').upsert({ key:'metric', value:{ value:metricValue }, updated_at:new Date().toISOString() },{ onConflict:'key' });
-    setSyncDot(error ? 'error' : 'synced');
+    const {error}=await sb.from('protocol_meta').upsert({key:'metric',value:{value:metricValue},updated_at:new Date().toISOString()},{onConflict:'key'});
+    setSyncDot(error?'error':'synced');
   }
 
   // ── Today ────────────────────────────────────────────────
   function loadToday() {
-    const e = cache[todayKey()]||{};
-    todayAnchors = e.anchors ? [...e.anchors] : [false,false,false];
-    todayTasks   = e.tasks   ? JSON.parse(JSON.stringify(e.tasks)) : [];
-    document.getElementById('noteArea').value = e.note||'';
+    const e=cache[todayKey()]||{};
+    todayAnchors=e.anchors?[...e.anchors]:[false,false,false];
+    todayTasks  =e.tasks  ?JSON.parse(JSON.stringify(e.tasks)):[];
+    document.getElementById('noteArea').value=e.note||'';
   }
 
-  function updateCache(noteOverride) {
-    const key = todayKey();
-    if (!cache[key]) cache[key]={};
-    cache[key].anchors = [...todayAnchors];
-    cache[key].tasks   = JSON.parse(JSON.stringify(todayTasks));
-    if (noteOverride !== undefined) cache[key].note = noteOverride;
-    else if (!cache[key].note) cache[key].note='';
+  function updateCacheToday(noteOverride) {
+    const key=todayKey();
+    if(!cache[key]) cache[key]={};
+    cache[key].anchors=[...todayAnchors];
+    cache[key].tasks  =JSON.parse(JSON.stringify(todayTasks));
+    if(noteOverride!==undefined) cache[key].note=noteOverride;
+    else if(!cache[key].note) cache[key].note='';
   }
 
-  // ── Anchors ──────────────────────────────────────────────
   function toggleAnchor(i) {
     todayAnchors[i]=!todayAnchors[i];
     document.getElementById('anchor'+i).classList.toggle('checked',todayAnchors[i]);
-    updateCache(); upsertDay(todayKey());
+    updateCacheToday(); upsertDay(todayKey());
     renderCalendar(); renderStats(); renderHistory();
   }
 
@@ -373,42 +392,52 @@
     todayAnchors.forEach((v,i)=>document.getElementById('anchor'+i).classList.toggle('checked',v));
   }
 
-  // ── Tasks ────────────────────────────────────────────────
   function addTask() {
-    const inp=document.getElementById('taskInput'), lbl=inp.value.trim();
+    const inp=document.getElementById('taskInput'),lbl=inp.value.trim();
     if(!lbl) return;
     todayTasks.push({id:Date.now(),label:lbl,done:false});
-    inp.value='';
-    updateCache(); upsertDay(todayKey()); renderTasks();
+    inp.value=''; updateCacheToday(); upsertDay(todayKey()); renderTasks();
   }
 
   function toggleTask(id) {
     const t=todayTasks.find(t=>t.id===id); if(t) t.done=!t.done;
-    updateCache(); upsertDay(todayKey()); renderTasks();
+    updateCacheToday(); upsertDay(todayKey()); renderTasks();
   }
 
   function deleteTask(id) {
     todayTasks=todayTasks.filter(t=>t.id!==id);
-    updateCache(); upsertDay(todayKey()); renderTasks();
+    updateCacheToday(); upsertDay(todayKey()); renderTasks();
   }
 
-  function renderTasks() {
-    const list=document.getElementById('taskList');
-    if(!todayTasks.length){ list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:8px 0 4px;font-style:italic;">Sem tarefas ainda.</div>'; return; }
-    list.innerHTML=todayTasks.map(t=>`
-      <div class="task-item${t.done?' done':''}">
-        <div class="task-check" onclick="toggleTask(${t.id})">
-          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
+
+  function buildTaskListHTML(tasks, checkFn, deleteFn) {
+    if (!tasks.length) return '<div style="font-size:13px;color:var(--text-dim);padding:8px 0 4px;font-style:italic;">Sem tarefas ainda.</div>';
+    const pending = tasks.filter(t=>!t.done);
+    const done    = tasks.filter(t=>t.done);
+    let html = pending.map(t=>`
+      <div class="task-item">
+        <div class="task-check" onclick="${checkFn}(${t.id})"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="task-label">${esc(t.label)}</div>
-        <div class="task-delete" onclick="deleteTask(${t.id})">×</div>
+        <div class="task-delete" onclick="${deleteFn}(${t.id})">×</div>
       </div>`).join('');
+    if (done.length) {
+      html += `<div class="task-divider">Concluídas (${done.length})</div>`;
+      html += done.map(t=>`
+        <div class="task-item done">
+          <div class="task-check" onclick="${checkFn}(${t.id})"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="task-label">${esc(t.label)}</div>
+          <div class="task-delete" onclick="${deleteFn}(${t.id})">×</div>
+        </div>`).join('');
+    }
+    return html;
+  }
+  function renderTasks() {
+    document.getElementById('taskList').innerHTML = buildTaskListHTML(todayTasks, 'toggleTask', 'deleteTask');
   }
 
-  // ── Save note ────────────────────────────────────────────
   async function saveDay() {
     const note=document.getElementById('noteArea').value.trim();
-    updateCache(note); await upsertDay(todayKey());
+    updateCacheToday(note); await upsertDay(todayKey());
     const btn=document.getElementById('saveBtn');
     btn.textContent='✓ GUARDADO'; btn.classList.add('saved');
     showToast('Dia guardado');
@@ -419,15 +448,15 @@
   // ── Metric ───────────────────────────────────────────────
   function renderMetric() {
     const m=PHASE_META[phaseOf(currentDayNum())];
-    document.getElementById('metricTitle').textContent    = m.title;
-    document.getElementById('metricPhaseTag').textContent = m.tag;
-    document.getElementById('metricValueDisplay').childNodes[0].textContent = metricValue+' ';
-    document.getElementById('metricUnit').textContent     = m.unit;
-    document.getElementById('metricDescTxt').textContent  = m.desc;
+    document.getElementById('metricTitle').textContent    =m.title;
+    document.getElementById('metricPhaseTag').textContent =m.tag;
+    document.getElementById('metricValueDisplay').childNodes[0].textContent=metricValue+' ';
+    document.getElementById('metricUnit').textContent     =m.unit;
+    document.getElementById('metricDescTxt').textContent  =m.desc;
   }
 
   async function updateMetric() {
-    const inp=document.getElementById('metricInput'), val=parseInt(inp.value);
+    const inp=document.getElementById('metricInput'),val=parseInt(inp.value);
     if(!val||isNaN(val)) return;
     metricValue+=val; inp.value='';
     renderMetric(); await saveMetricToDB(); showToast('+'+val+' adicionado');
@@ -436,7 +465,7 @@
   // ── Calendar ─────────────────────────────────────────────
   function renderCalendar() {
     const grid=document.getElementById('calendarGrid'); grid.innerHTML='';
-    const start=getStartDate(), today=todayKey();
+    const start=getStartDate(),today=todayKey();
     for(let i=0;i<90;i++){
       const d=new Date(start+'T12:00:00'); d.setDate(d.getDate()+i);
       const key=d.toISOString().slice(0,10);
@@ -454,7 +483,7 @@
 
   // ── Stats ────────────────────────────────────────────────
   function renderStats() {
-    const start=getStartDate(), today=todayKey(), dayNum=currentDayNum();
+    const start=getStartDate(),today=todayKey(),dayNum=currentDayNum();
     let total=0,streak=0,broken=false;
     for(let i=dayNum-1;i>=0;i--){
       const d=new Date(start+'T12:00:00'); d.setDate(d.getDate()+i);
@@ -464,20 +493,20 @@
       if(!broken){if(full)streak++;else if(key<today)broken=true;}
     }
     const pct=dayNum>1?Math.round((total/(dayNum-1))*100):0;
-    document.getElementById('streakNum').textContent    = streak;
-    document.getElementById('totalDays').textContent    = total;
-    document.getElementById('totalPercent').textContent = pct+'%';
-    document.getElementById('progressFill').style.width = Math.round((dayNum/90)*100)+'%';
-    document.getElementById('progressText').textContent = dayNum+' / 90 dias';
+    document.getElementById('streakNum').textContent    =streak;
+    document.getElementById('totalDays').textContent    =total;
+    document.getElementById('totalPercent').textContent =pct+'%';
+    document.getElementById('progressFill').style.width =Math.round((dayNum/90)*100)+'%';
+    document.getElementById('progressText').textContent =dayNum+' / 90 dias';
   }
 
   // ── History ──────────────────────────────────────────────
   function renderHistory() {
-    const list=document.getElementById('historyList'), start=getStartDate();
+    const list=document.getElementById('historyList'),start=getStartDate();
     const keys=Object.keys(cache).sort().reverse();
     if(!keys.length){ list.innerHTML='<div style="color:var(--text-dim);font-size:13px;padding:16px 0;font-style:italic;">Sem entradas ainda. Começa hoje.</div>'; return; }
     list.innerHTML=keys.slice(0,14).map(key=>{
-      const e=cache[key], anchors=e.anchors||[false,false,false], tasks=e.tasks||[];
+      const e=cache[key],anchors=e.anchors||[false,false,false],tasks=e.tasks||[];
       const dots=anchors.map(a=>`<div class="history-dot${a?' done':''}"></div>`).join('');
       const taskSum=tasks.length?`<div class="history-tasks-summary">${tasks.filter(t=>t.done).length}/${tasks.length} tarefas</div>`:'';
       const note=e.note?`<div class="history-note">${esc(e.note)}</div>`:'';
@@ -491,35 +520,157 @@
 
   // ── Header ───────────────────────────────────────────────
   function renderHeader() {
-    const day=currentDayNum(), phase=phaseOf(day);
+    const day=currentDayNum(),phase=phaseOf(day);
     document.getElementById('currentDay').textContent=day;
     const labels={1:'FASE 1 — REINSTALAR O SISTEMA',2:'FASE 2 — PRESSÃO COMERCIAL',3:'FASE 3 — SISTEMAS & DELEGAÇÃO'};
     document.getElementById('phaseLabel').textContent=labels[phase];
-    [1,2,3].forEach(p=>{
-      const dot=document.getElementById('phase'+p+'dot'); dot.className='phase-dot';
-      if(p<phase)dot.classList.add('done'); else if(p===phase)dot.classList.add('active');
-    });
+    [1,2,3].forEach(p=>{ const dot=document.getElementById('phase'+p+'dot'); dot.className='phase-dot'; if(p<phase)dot.classList.add('done'); else if(p===phase)dot.classList.add('active'); });
     const d=new Date();
     document.getElementById('todayDate').textContent=DAY_NAMES[d.getDay()]+', '+d.getDate()+' de '+MONTH_LONG[d.getMonth()];
   }
 
-  // ── Modal ────────────────────────────────────────────────
-  function openModal(key,dayNum) {
-    const e=cache[key]||{}, phase=phaseOf(dayNum);
-    const anchors=e.anchors||[false,false,false], tasks=e.tasks||[], note=e.note||'';
-    const aL=['Treino','Bloco Sagrado','Fecho do Dia'];
+  // ── Modal (fully editable) ────────────────────────────────
+  function openModal(key, dayNum) {
+    modalKey    = key;
+    const e     = cache[key]||{};
+    modalAnchors= e.anchors ? [...e.anchors] : [false,false,false];
+    modalTasks  = e.tasks   ? JSON.parse(JSON.stringify(e.tasks)) : [];
+    const note  = e.note||'';
+    const phase = phaseOf(dayNum);
+
     document.getElementById('modalDayNum').textContent   = 'DIA '+dayNum+' — '+PHASE_META[phase].tag;
     document.getElementById('modalDateTitle').textContent= fmtFull(key).toUpperCase();
-    document.getElementById('modalBody').innerHTML =
-      `<div><div class="modal-sec-title">Âncoras</div><div class="modal-anchors">${anchors.map((a,i)=>`<div class="modal-anchor${a?' done':''}"><div class="modal-anchor-dot"></div><div class="modal-anchor-label">${aL[i]}</div></div>`).join('')}</div></div>`+
-      `<div><div class="modal-sec-title">Tarefas${tasks.length?' ('+tasks.filter(t=>t.done).length+'/'+tasks.length+' completas)':''}</div>${tasks.length?`<div class="modal-tasks-list">${tasks.map(t=>`<div class="modal-task${t.done?' done':''}"><div class="modal-task-dot"></div><div class="modal-task-text">${esc(t.label)}</div></div>`).join('')}</div>`:'<div class="modal-empty">Sem tarefas registadas.</div>'}</div>`+
-      `<div><div class="modal-sec-title">Nota de fecho</div>${note?`<div class="modal-note">${esc(note)}</div>`:'<div class="modal-empty">Sem nota para este dia.</div>'}</div>`+
-      (key===todayKey()?`<div><div class="modal-sec-title">Métrica — ${PHASE_META[phase].title}</div><div class="modal-metric-row"><div class="modal-metric-label">${PHASE_META[phase].desc}</div><div class="modal-metric-val">${metricValue} ${PHASE_META[phase].unit}</div></div></div>`:'');
+
+    renderModalBody(key, dayNum, phase, note);
     document.getElementById('modalOverlay').classList.add('open');
     document.body.style.overflow='hidden';
   }
 
-  function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); document.body.style.overflow=''; }
+  function renderModalBody(key, dayNum, phase, note) {
+    const anchorsHTML = `
+      <div>
+        <div class="modal-sec-title">Âncoras</div>
+        <div class="modal-anchors">
+          ${modalAnchors.map((a,i)=>`
+            <div class="modal-anchor${a?' done':''}" onclick="toggleModalAnchor(${i})">
+              <div class="modal-anchor-dot"></div>
+              <div class="modal-anchor-label">${ANCHOR_LABELS[i]}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+    const tasksHTML = `
+      <div>
+        <div class="modal-sec-title">Tarefas${modalTasks.length?' ('+modalTasks.filter(t=>t.done).length+'/'+modalTasks.length+' completas)':''}</div>
+        <div class="modal-tasks-list" id="modalTaskList">
+          ${modalTasks.length
+            ? modalTasks.map(t=>`
+                <div class="modal-task${t.done?' done':''}">
+                  <div class="modal-task-check" onclick="toggleModalTask(${t.id})">
+                    <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="modal-task-text">${esc(t.label)}</div>
+                  <div class="modal-task-del" onclick="deleteModalTask(${t.id})">×</div>
+                </div>`).join('')
+            : '<div class="modal-empty">Sem tarefas registadas.</div>'}
+        </div>
+        <div class="modal-task-input-row">
+          <input class="modal-task-input" type="text" id="modalTaskInput" placeholder="Adicionar tarefa..." onkeydown="if(event.key==='Enter')addModalTask()">
+          <button class="modal-task-add" onclick="addModalTask()">+ ADD</button>
+        </div>
+      </div>`;
+
+    const noteHTML = `
+      <div>
+        <div class="modal-sec-title">Nota de fecho</div>
+        <textarea class="modal-note-area" id="modalNoteArea" placeholder="O que aconteceu. Como foi.">${esc(note)}</textarea>
+        <button class="modal-save-btn" id="modalSaveBtn" onclick="saveModalDay()">GUARDAR ALTERAÇÕES</button>
+      </div>`;
+
+    const metricHTML = key===todayKey() ? `
+      <div>
+        <div class="modal-sec-title">Métrica — ${PHASE_META[phase].title}</div>
+        <div class="modal-metric-row">
+          <div class="modal-metric-label">${PHASE_META[phase].desc}</div>
+          <div class="modal-metric-val">${metricValue} ${PHASE_META[phase].unit}</div>
+        </div>
+      </div>` : '';
+
+    document.getElementById('modalBody').innerHTML = anchorsHTML + tasksHTML + noteHTML + metricHTML;
+  }
+
+  function toggleModalAnchor(i) {
+    modalAnchors[i] = !modalAnchors[i];
+    // update dot in place without full re-render
+    const dots = document.querySelectorAll('.modal-anchor');
+    dots[i].classList.toggle('done', modalAnchors[i]);
+  }
+
+  function addModalTask() {
+    const inp = document.getElementById('modalTaskInput');
+    const lbl = inp.value.trim();
+    if (!lbl) return;
+    modalTasks.push({id: Date.now(), label: lbl, done: false});
+    inp.value = '';
+    refreshModalTaskList();
+  }
+
+  function toggleModalTask(id) {
+    const t = modalTasks.find(t=>t.id===id); if(t) t.done=!t.done;
+    refreshModalTaskList();
+  }
+
+  function deleteModalTask(id) {
+    modalTasks = modalTasks.filter(t=>t.id!==id);
+    refreshModalTaskList();
+  }
+
+  function refreshModalTaskList() {
+    const list = document.getElementById('modalTaskList');
+    if (!list) return;
+    if (!modalTasks.length) { list.innerHTML='<div class="modal-empty">Sem tarefas registadas.</div>'; return; }
+    const pending = modalTasks.filter(t=>!t.done);
+    const done    = modalTasks.filter(t=>t.done);
+    const mkItem  = t => `
+      <div class="modal-task${t.done?' done':''}">
+        <div class="modal-task-check" onclick="toggleModalTask(${t.id})">
+          <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="modal-task-text">${esc(t.label)}</div>
+        <div class="modal-task-del" onclick="deleteModalTask(${t.id})">×</div>
+      </div>`;
+    let html = pending.map(mkItem).join('');
+    if (done.length) {
+      html += `<div class="task-divider">Concluídas (${done.length})</div>`;
+      html += done.map(mkItem).join('');
+    }
+    list.innerHTML = html;
+  }
+
+  async function saveModalDay() {
+    const note = document.getElementById('modalNoteArea').value.trim();
+    if (!cache[modalKey]) cache[modalKey]={};
+    cache[modalKey].anchors = [...modalAnchors];
+    cache[modalKey].tasks   = JSON.parse(JSON.stringify(modalTasks));
+    cache[modalKey].note    = note;
+
+    // if editing today, sync back to live state too
+    if (modalKey === todayKey()) {
+      todayAnchors = [...modalAnchors];
+      todayTasks   = JSON.parse(JSON.stringify(modalTasks));
+      document.getElementById('noteArea').value = note;
+      renderAnchors(); renderTasks();
+    }
+
+    await upsertDay(modalKey);
+    const btn = document.getElementById('modalSaveBtn');
+    btn.textContent='✓ GUARDADO'; btn.classList.add('saved');
+    showToast('Dia actualizado');
+    setTimeout(()=>{btn.textContent='GUARDAR ALTERAÇÕES';btn.classList.remove('saved');},2000);
+    renderCalendar(); renderStats(); renderHistory();
+  }
+
+  function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); document.body.style.overflow=''; modalKey=null; }
   function closeModalOnBg(e){ if(e.target===document.getElementById('modalOverlay'))closeModal(); }
   document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeModal(); });
 
@@ -528,7 +679,7 @@
 
   // ── Reset ────────────────────────────────────────────────
   async function confirmReset() {
-    if(!confirm('Tens a certeza? Todos os dados serão apagados do servidor.')) return;
+    if(!confirm('Tens a certeza? Todos os dados serão apagados.')) return;
     setSyncDot('syncing');
     await Promise.all([
       sb.from('protocol_days').delete().neq('day_key','__none__'),
@@ -538,14 +689,12 @@
     cache={}; metricValue=0; todayAnchors=[false,false,false]; todayTasks=[];
     document.getElementById('noteArea').value='';
     getStartDate();
-    await sb.from('protocol_meta').upsert({ key:'start_date', value:{ date:getStartDate() }, updated_at:new Date().toISOString() },{ onConflict:'key' });
+    await sb.from('protocol_meta').upsert({key:'start_date',value:{date:getStartDate()},updated_at:new Date().toISOString()},{onConflict:'key'});
     setSyncDot('synced'); renderAll(); showToast('Protocolo reiniciado');
   }
 
-  // ── Render all ───────────────────────────────────────────
   function renderAll(){ renderHeader(); renderAnchors(); renderTasks(); renderMetric(); renderCalendar(); renderStats(); renderHistory(); }
 
-  // ── Init ─────────────────────────────────────────────────
   (async()=>{ getStartDate(); await loadAllFromDB(); loadToday(); renderAll(); })();
 </script>
 </body>
